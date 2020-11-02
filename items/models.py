@@ -1,20 +1,23 @@
 from django.db import models
 from django.conf import settings
+from django.core.exceptions import ValidationError
+
+from measurement.utils import guess
 
 UNIT = (
-    ('g', 'gram'),
-    ('mg', 'miligram'),
-    ('kg', 'kilogram'),
+    ('g', 'Gram'),
+    ('mg', 'Milligram'),
+    ('kg', 'Kilogram'),
 
-    ('ml', 'Milimeter'),
+    ('ml', 'Millimeter'),
     ('l', 'Liter'),
 
     ('oz', 'Oz'),
 
-    ('tbsp', 'Table Spoon'),
-    ('tsp', 'Tea Spoon'),
+    ('us_tbsp', 'Table Spoon'),
+    ('us_tsp', 'Tea Spoon'),
     
-    ('cup', 'Cup'),
+    ('us_cup', 'Cup')
 )
 
 
@@ -30,6 +33,9 @@ class Ingredient(models.Model):
     
     def amount_unit(self):
         return f'{self.amount} {self.unit}'
+    
+    class Meta:
+        ordering = ('name',)
 
 
 class Recipe(models.Model):
@@ -46,10 +52,7 @@ class Recipe(models.Model):
         costs = 0
 
         for recipe in recipies:
-            ingredient = recipe.ingredient
-            used_amount = recipe.amount / ingredient.amount
-            used_cost = used_amount * ingredient.cost
-            costs += used_cost
+            costs += recipe.cost()
         return '₱{0:.2f}'.format(costs)
 
 
@@ -61,9 +64,22 @@ class RecipeItem(models.Model):
     created =  models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f'{self.recipe.name} - {self.amount} {self.unit}'
+        unit = self.get_unit_display()
+        return f'{self.recipe.name} - {self.amount} {unit} - ₱{self.cost()}'
+
+    def clean(self):
+        try:
+            self.cost()
+        except:
+            raise ValidationError(f"Unable to convert {self.ingredient.unit} to {self.unit}")
 
     def cost(self):
-        use_amount = amount / self.recipe.amount
-        price = use * self.recipe.cost
-        return price
+        try:
+            ingredient = self.ingredient
+            measurement = guess(self.ingredient.amount, self.ingredient.unit)
+            recipe_amount = measurement.__getattr__(self.unit)
+            used_amount = float(self.amount) / float(recipe_amount)
+            used_cost = float(used_amount) * float(self.ingredient.cost)
+            return used_cost
+        except:
+            raise ValidationError(f"Unable to convert {self.ingredient.unit} to {self.unit}")

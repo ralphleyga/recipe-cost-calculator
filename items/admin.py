@@ -18,6 +18,16 @@ class RecipeItemInline(admin.TabularInline):
     model = RecipeItem
     raw_id_fields = ('recipe',)
 
+    class Media:
+        css = {
+            'all': ('selects/select2.css',)
+            }
+        js = (
+                'selects/jquery.js',
+                'selects/select2.js',
+                'selects/custom.js',
+            )
+
 
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
