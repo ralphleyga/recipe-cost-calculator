@@ -3,15 +3,25 @@ from django.contrib import admin
 from .models import (
     Ingredient,
     RecipeItem,
-    Recipe
+    Recipe,
+    IngredientConvert
 )
 
 admin.site.site_header = "Reciply"
+
+
+class IngredientConvertInline(admin.TabularInline):
+    model = IngredientConvert
+
 
 @admin.register(Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
     list_display = ('name', 'cost', 'amount', 'unit')
     search_fields = ('name',)
+    
+    inlines = (
+        IngredientConvertInline,
+    )
 
 
 class RecipeItemInline(admin.TabularInline):

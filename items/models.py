@@ -83,3 +83,9 @@ class RecipeItem(models.Model):
             return used_cost
         except:
             raise ValidationError(f"Unable to convert {self.ingredient.unit} to {self.unit}")
+
+
+class IngredientConvert(models.Model):
+    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
+    amount = models.DecimalField(decimal_places=2, max_digits=10)
+    unit = models.CharField(max_length=20, choices=UNIT)
